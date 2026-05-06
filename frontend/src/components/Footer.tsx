@@ -1,5 +1,16 @@
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
+
+function SocialGlyph({ letter, label }: { letter: string; label: string }) {
+  return (
+    <span
+      aria-label={label}
+      className="w-5 h-5 inline-flex items-center justify-center text-xs font-semibold"
+    >
+      {letter}
+    </span>
+  );
+}
 
 export default function Footer() {
   const quickLinks = [
@@ -75,21 +86,21 @@ export default function Footer() {
                 className="w-10 h-10 rounded-full bg-primary-foreground/10 hover:bg-accent-gold flex items-center justify-center transition-colors"
                 aria-label="Facebook"
               >
-                <Facebook className="w-5 h-5" />
+                <SocialGlyph letter="F" label="Facebook" />
               </a>
               <a
                 href="#"
                 className="w-10 h-10 rounded-full bg-primary-foreground/10 hover:bg-accent-gold flex items-center justify-center transition-colors"
                 aria-label="Instagram"
               >
-                <Instagram className="w-5 h-5" />
+                <SocialGlyph letter="I" label="Instagram" />
               </a>
               <a
                 href="#"
                 className="w-10 h-10 rounded-full bg-primary-foreground/10 hover:bg-accent-gold flex items-center justify-center transition-colors"
                 aria-label="Twitter"
               >
-                <Twitter className="w-5 h-5" />
+                <SocialGlyph letter="T" label="Twitter" />
               </a>
             </div>
           </div>
@@ -112,3 +123,4 @@ export default function Footer() {
     </footer>
   );
 }
+

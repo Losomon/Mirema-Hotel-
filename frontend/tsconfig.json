@@ -5,6 +5,8 @@
     "jsxImportSource": "react",
     "rootDir": ".",
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitReturns": false,

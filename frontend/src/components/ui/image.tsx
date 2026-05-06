@@ -3,6 +3,7 @@ import { forwardRef, type ImgHTMLAttributes, useEffect, useImperativeHandle, use
 import { useSize } from '@/hooks/use-size'
 import './image.css'
 import { cn } from '@/lib/utils';
+import { Image as UiImage } from '@/components/ui/image';
 
 const FALLBACK_IMAGE_URL = "https://static.wixstatic.com/media/12d367_4f26ccd17f8f4e3a8958306ea08c2332~mv2.png";
 
@@ -128,11 +129,7 @@ const WixImage = forwardRef<HTMLImageElement, WixImageProps>(
 
     return (
       <ImageWrapper ref={wrapperRef} data={data} className={className} style={style}>
-        <img
-          ref={imgRef}
-          className={`w-full h-full inset-0 absolute ${fittingType === 'fit' ? 'object-contain' : 'object-cover'}`}
-          {...imgProps}
-        />
+        <Image ref={imgRef} className={`w-full h-full inset-0 absolute ${fittingType === 'fit' ? 'object-contain' : 'object-cover'}`} {...imgProps} />
       </ImageWrapper>
     )
   }
@@ -163,7 +160,7 @@ export const Image = forwardRef<HTMLImageElement, ImageProps>(
 
     if (!imageData) {
       const isErrorUrl = imgSrc === FALLBACK_IMAGE_URL
-      return <img ref={ref} src={imgSrc} {...imageProps} data-error-image={isErrorUrl} />
+      return <Image ref={ref} src={imgSrc} {...imageProps} data-error-image={isErrorUrl} />
     }
 
     return <WixImage ref={ref} data={imageData} {...imageProps} />
