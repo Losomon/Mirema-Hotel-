@@ -51,37 +51,37 @@ export class BaseCrudService {
    * Populates multi-reference fields for a single item using queryReferenced()
    * Fetches up to 1000 items and provides metadata for further pagination
    */
-  private static async populateMultiRefs<T extends WixDataItem>(
-    collectionId: string,
-    item: T,
-    multiRefs: string[]
-  ): Promise<T> {
-    if (multiRefs.length === 0) return item;
+private static async populateMultiRefs<T extends WixDataItem>(
+  collectionId: string,
+  item: T,
+  multiRefs: string[]
+): Promise<T> {
+  if (multiRefs.length === 0) return item;
 
-    const itemWithRefs = { ...item } as any;
-    itemWithRefs._refMeta = {};
+  const itemWithRefs = { ...item };
+  itemWithRefs._refMeta = {};
 
-    for (const refField of multiRefs) {
-      try {
-        // Fetch up to 1000 referenced items with total count
-        const result = await items.queryReferenced(collectionId, item._id, refField, {
-          limit: 1000,
-          returnTotalCount: true
-        });
+  for (const refField of multiRefs) {
+    try {
+      // Fetch up to 1000 referenced items with total count
+      const result = await items.queryReferenced(collectionId, item._id, refField, {
+        limit: 1000,
+        returnTotalCount: true,
+      });
 
-        itemWithRefs[refField] = result.items;
-        itemWithRefs._refMeta[refField] = {
-          totalCount: result.totalCount ?? result.items.length,
-          returnedCount: result.items.length,
-          hasMore: result.hasNext()
-        };
-      } catch {
-        itemWithRefs[refField] = [];
-        itemWithRefs._refMeta[refField] = { totalCount: 0, returnedCount: 0, hasMore: false };
-      }
+      (itemWithRefs as any)[refField] = result.items;
+      (itemWithRefs._refMeta as Record<string, RefFieldMeta>)[refField] = {
+        totalCount: result.totalCount ?? result.items.length,
+        returnedCount: result.items.length,
+        hasMore: result.hasNext(),
+      };
+    } catch {
+      (itemWithRefs as any)[refField] = [];
+      (itemWithRefs._refMeta as Record<string, RefFieldMeta>)[refField] = { totalCount: 0, returnedCount: 0, hasMore: false };
     }
-    return itemWithRefs as T;
   }
+  return itemWithRefs as T;
+}
 
   /**
    * Creates a new item in the collection
@@ -92,26 +92,26 @@ export class BaseCrudService {
   static async create<T extends WixDataItem>(
     collectionId: string,
     itemData: Partial<T> | Record<string, unknown>,
-    multiReferences?: Record<string, any>
+    multiReferences?: Record<string, unknown>
   ): Promise<T> {
     try {
       const result = await items.insert(collectionId, itemData as Record<string, unknown>);
 
-      if (multiReferences && Object.keys(multiReferences).length > 0 && result._id) {
-        for (const [propertyName, refIds] of Object.entries(multiReferences)) {
-          if (Array.isArray(refIds) && refIds.length > 0) {
-            await items.insertReference(collectionId, propertyName, result._id, refIds as string[]);
-          }
-        }
-      }
+       if (multiReferences && Object.keys(multiReferences).length > 0 && result._id) {
+         for (const [propertyName, refIds] of Object.entries(multiReferences)) {
+           if (Array.isArray(refIds)) {
+             for (const refId of refIds) {
+               await items.insertReference(collectionId, propertyName, result._id, refId);
+             }
+           }
+         }
+       }
 
       return result as T;
     } catch (error) {
       // Should consider reverting the insert with a remove in order to prevent partial insert.
       console.error(`Error creating ${collectionId}:`, error);
-      throw new Error(
-        error instanceof Error ? error.message : `Failed to create ${collectionId}`
-      );
+      throw new Error(error instanceof Error ? error.message : `Failed to create ${collectionId}`);
     }
   }
 
@@ -151,9 +151,7 @@ export class BaseCrudService {
       };
     } catch (error) {
       console.error(`Error fetching ${collectionId}s:`, error);
-      throw new Error(
-        error instanceof Error ? error.message : `Failed to fetch ${collectionId}s`
-      );
+      throw new Error(error instanceof Error ? error.message : `Failed to fetch ${collectionId}s`);
     }
   }
 
@@ -185,9 +183,7 @@ export class BaseCrudService {
       return this.populateMultiRefs<T>(collectionId, result.items[0] as T, multiRefs);
     } catch (error) {
       console.error(`Error fetching ${collectionId} by ID:`, error);
-      throw new Error(
-        error instanceof Error ? error.message : `Failed to fetch ${collectionId}`
-      );
+      throw new Error(error instanceof Error ? error.message : `Failed to fetch ${collectionId}`);
     }
   }
 
@@ -210,9 +206,7 @@ export class BaseCrudService {
       return result as T;
     } catch (error) {
       console.error(`Error updating ${collectionId}:`, error);
-      throw new Error(
-        error instanceof Error ? error.message : `Failed to update ${collectionId}`
-      );
+      throw new Error(error instanceof Error ? error.message : `Failed to update ${collectionId}`);
     }
   }
 
@@ -231,9 +225,7 @@ export class BaseCrudService {
       return result as T;
     } catch (error) {
       console.error(`Error deleting ${collectionId}:`, error);
-      throw new Error(
-        error instanceof Error ? error.message : `Failed to delete ${collectionId}`
-      );
+      throw new Error(error instanceof Error ? error.message : `Failed to delete ${collectionId}`);
     }
   }
 
@@ -256,9 +248,7 @@ export class BaseCrudService {
       }
     } catch (error) {
       console.error(`Error adding references to ${collectionId}:`, error);
-      throw new Error(
-        error instanceof Error ? error.message : `Failed to add references to ${collectionId}`
-      );
+      throw new Error(error instanceof Error ? error.message : `Failed to add references to ${collectionId}`);
     }
   }
 
@@ -281,10 +271,8 @@ export class BaseCrudService {
       }
     } catch (error) {
       console.error(`Error removing references from ${collectionId}:`, error);
-      throw new Error(
-        error instanceof Error ? error.message : `Failed to remove references from ${collectionId}`
-      );
+      throw new Error(error instanceof Error ? error.message : `Failed to remove references from ${collectionId}`);
     }
   }
-
 }
+

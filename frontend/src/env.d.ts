@@ -20,10 +20,26 @@ declare global {
 }
 
 declare module "react-router-dom" {
+  // React Router v6+/createBrowserRouter route config uses `RouteObject`.
+  // Augment route objects so `routeMetadata` can be specified.
+  export interface RouteObject {
+    routeMetadata?: PageMetadata;
+  }
+
   export interface IndexRouteObject {
     routeMetadata?: PageMetadata;
   }
+
   export interface NonIndexRouteObject {
     routeMetadata?: PageMetadata;
   }
 }
+
+declare module "react-router" {
+  // `RouteObject` is also re-exported from `react-router`.
+  export interface RouteObject {
+    routeMetadata?: PageMetadata;
+  }
+}
+
+

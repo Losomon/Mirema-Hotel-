@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-rou
 import { ScrollToTop } from '@/lib/scroll-to-top';
 import ErrorPage from '@/integrations/errorHandlers/ErrorPage';
 import { MemberProtectedRoute } from '@/components/ui/member-protected-route';
+import { AdminProtectedRoute } from '@/components/ui/admin-protected-route';
 import HomePage from '@/components/pages/HomePage';
 import RoomsPage from '@/components/pages/RoomsPage';
 import AboutPage from '@/components/pages/AboutPage';
@@ -11,6 +12,13 @@ import GalleryPage from '@/components/pages/GalleryPage';
 import ContactPage from '@/components/pages/ContactPage';
 import BookingPage from '@/components/pages/BookingPage';
 import ProfilePage from '@/components/pages/ProfilePage';
+import AdminDashboardPage from '@/components/pages/admin/AdminDashboardPage';
+import AdminBookingsPage from '@/components/pages/admin/AdminBookingsPage';
+import AdminBookingDetailsPage from '@/components/pages/admin/AdminBookingDetailsPage';
+import AdminRoomsPage from '@/components/pages/admin/AdminRoomsPage';
+import AdminRoomAddPage from '@/components/pages/admin/AdminRoomAddPage';
+import AdminRoomEditPage from '@/components/pages/admin/AdminRoomEditPage';
+
 
 // Layout component that includes ScrollToTop
 function Layout() {
@@ -92,6 +100,73 @@ const router = createBrowserRouter([
           pageIdentifier: 'profile',
         },
       },
+       {
+         path: "admin/dashboard",
+         element: (
+           <AdminProtectedRoute>
+             <AdminDashboardPage />
+           </AdminProtectedRoute>
+         ),
+         routeMetadata: {
+           pageIdentifier: 'admin-dashboard',
+         },
+       },
+       {
+         path: "admin/bookings",
+         element: (
+           <AdminProtectedRoute>
+             <AdminBookingsPage />
+           </AdminProtectedRoute>
+         ),
+         routeMetadata: {
+           pageIdentifier: 'admin-bookings',
+         },
+       },
+       {
+         path: "admin/bookings/:bookingId",
+         element: (
+           <AdminProtectedRoute>
+             <AdminBookingDetailsPage />
+           </AdminProtectedRoute>
+         ),
+         routeMetadata: {
+           pageIdentifier: 'admin-booking-details',
+         },
+       },
+       {
+         path: "admin/rooms",
+         element: (
+           <AdminProtectedRoute>
+             <AdminRoomsPage />
+           </AdminProtectedRoute>
+         ),
+         routeMetadata: {
+           pageIdentifier: 'admin-rooms',
+         },
+       },
+       {
+         path: "admin/rooms/add",
+         element: (
+           <AdminProtectedRoute>
+             <AdminRoomAddPage />
+           </AdminProtectedRoute>
+         ),
+         routeMetadata: {
+           pageIdentifier: 'admin-room-add',
+         },
+       },
+       {
+         path: "admin/rooms/edit/:roomId",
+         element: (
+           <AdminProtectedRoute>
+             <AdminRoomEditPage />
+           </AdminProtectedRoute>
+         ),
+         routeMetadata: {
+           pageIdentifier: 'admin-room-edit',
+         },
+       },
+
       {
         path: "*",
         element: <Navigate to="/" replace />,
