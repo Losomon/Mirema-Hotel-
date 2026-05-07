@@ -95,7 +95,7 @@ router.post('/', middleware_1.authenticate, async (req, res) => {
     catch (e) {
         if (e.name === 'ZodError') {
             return res.status(400).json({
-                error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+                error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.issues },
             });
         }
         console.error('[bookings/create]', e);
@@ -129,7 +129,7 @@ router.put('/:id', middleware_1.authenticate, (0, middleware_1.requireRole)('adm
     catch (e) {
         if (e.name === 'ZodError') {
             return res.status(400).json({
-                error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+                error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.issues },
             });
         }
         console.error('[bookings/update]', e);
