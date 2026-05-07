@@ -34,7 +34,7 @@ router.post('/login', async (req, res) => {
     catch (e) {
         if (e.name === 'ZodError') {
             return res.status(400).json({
-                error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+                error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.issues },
             });
         }
         console.error('[auth/login]', e);

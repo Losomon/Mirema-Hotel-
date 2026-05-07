@@ -61,7 +61,7 @@ exports.app.use((err, req, res, next) => {
             error: {
                 code: 'BAD_REQUEST',
                 message: 'Validation failed',
-                details: err.errors,
+                details: err.issues,
             },
         });
     }

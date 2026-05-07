@@ -64,16 +64,16 @@ app.use('/api/bookings', bookingsRoutes);
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('[error]', err);
 
-  // Zod validation errors
-  if (err.name === 'ZodError') {
-    return res.status(400).json({
-      error: {
-        code: 'BAD_REQUEST',
-        message: 'Validation failed',
-        details: err.errors,
-      },
-    });
-  }
+   // Zod validation errors
+   if (err.name === 'ZodError') {
+     return res.status(400).json({
+       error: {
+         code: 'BAD_REQUEST',
+         message: 'Validation failed',
+         details: err.issues,
+       },
+     });
+   }
 
   // Known application errors
   if (err.code === 'VALIDATION_ERROR') {

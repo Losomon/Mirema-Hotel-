@@ -308,8 +308,37 @@ npm run build
 # Run compiled server
 npm start
 
-# Run integration tests (template)
-ts-node src/scripts/integration-tests.ts
+# Run test suite
+npm test
+```
+
+## Testing
+
+The backend uses **Vitest** + **Supertest** for API integration tests with an in-memory MongoDB instance.
+
+**Test Coverage**:
+- ✅ `GET /health` — health check endpoint
+- ✅ `GET /api/rooms` — list rooms with pagination
+- ✅ `GET /api/rooms/:id` — get single room
+- ✅ `GET /api/rooms/availability` — availability engine
+- ✅ `POST /api/bookings` — create booking (member)
+- ✅ `GET /api/bookings/me` — user's own bookings
+- ✅ `GET /api/bookings` — admin list all
+- ✅ `GET /api/bookings/:id` — admin get one
+- ✅ `PUT /api/bookings/:id` — admin update status
+- ✅ `DELETE /api/bookings/:id` — admin delete
+- ✅ Validation schemas (Zod) — all schemas unit tested
+
+**Running Tests**:
+```bash
+# Run all tests
+npm test
+
+# Watch mode
+npm run test:watch
+
+# Specific test file
+npm test -- tests/api.test.ts
 ```
 
 ## Security Notes

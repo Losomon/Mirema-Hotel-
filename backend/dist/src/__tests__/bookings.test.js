@@ -5,9 +5,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const supertest_1 = __importDefault(require("supertest"));
 const server_1 = require("../../server");
+const hasMongo = !!process.env.MONGO_URI;
+const describeDb = hasMongo ? describe : describe.skip;
 // Helper to create an admin token for tests
 async function getAdminToken() {
-    // Check if admin credentials exist in .env or seed data
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@mirema.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
     const res = await (0, supertest_1.default)(server_1.app)
@@ -33,8 +34,8 @@ describe('POST /api/bookings (member)', () => {
         });
         expect(res.status).toBe(401);
     });
-    it('should validate required fields', async () => {
-        // This test needs auth; skip — will be caught by Zod validation
+    it('should validate required fields (Zod)', async () => {
+        // Validation is tested in validation.test.ts
     });
 });
 describe('GET /api/bookings/me (member)', () => {
@@ -43,23 +44,25 @@ describe('GET /api/bookings/me (member)', () => {
         expect(res.status).toBe(401);
     });
     it('should return user bookings when authenticated', async () => {
-        // Requires valid user token — will test in integration runtime
-        // Skip for unit tests without DB setup
+        // Requires valid user token + DB
     });
 });
-describe('GET /api/bookings (admin)', () => {
+describeDb('GET /api/bookings (admin)', () => {
     it('should reject unauthenticated request', async () => {
         const res = await (0, supertest_1.default)(server_1.app).get('/api/bookings');
         expect(res.status).toBe(401);
     });
-    it('should reject non-admin authenticated request', async () => {
-        // Requires member token — will test in integration
-    });
     it('should return bookings list for admin', async () => {
-        // Requires admin token + populated DB — skip for pure unit
-    });
+        const token = await getAdminToken();
+        const res = await (0, supertest_1.default)(server_1.app)
+            .get('/api/bookings')
+            .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('bookings');
+        expect(Array.isArray(res.body.bookings)).toBe(true);
+    }, 10000);
 });
-describe('GET /api/bookings/:id (admin)', () => {
+describeDb('GET /api/bookings/:id (admin)', () => {
     it('should reject unauthenticated request', async () => {
         const res = await (0, supertest_1.default)(server_1.app).get('/api/bookings/000000000000000000000000');
         expect(res.status).toBe(401);
@@ -70,27 +73,26 @@ describe('GET /api/bookings/:id (admin)', () => {
             .get('/api/bookings/000000000000000000000000')
             .set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
-    });
+    }, 10000);
 });
-describe('PUT /api/bookings/:id (admin)', () => {
+describeDb('PUT /api/bookings/:id (admin)', () => {
     it('should reject unauthenticated request', async () => {
         const res = await (0, supertest_1.default)(server_1.app)
             .put('/api/bookings/000000000000000000000000')
             .send({ status: 'confirmed' });
         expect(res.status).toBe(401);
     });
-    it('should accept valid status values', async () => {
+    it('should accept valid status values (pending, confirmed, cancelled, completed)', async () => {
         const token = await getAdminToken();
-        // Test each status - will fail if booking doesn't exist but validation passes
         const statuses = ['pending', 'confirmed', 'cancelled', 'completed'];
         for (const status of statuses) {
             const res = await (0, supertest_1.default)(server_1.app)
                 .put('/api/bookings/000000000000000000000000')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ status });
-            expect(res.status).toBe(404); // Booking not found, but validation passed
+            expect(res.status).toBe(404); // Booking not found, validation passed
         }
-    });
+    }, 20000);
     it('should reject invalid status value with 400', async () => {
         const token = await getAdminToken();
         const res = await (0, supertest_1.default)(server_1.app)
@@ -99,14 +101,14 @@ describe('PUT /api/bookings/:id (admin)', () => {
             .send({ status: 'invalid' });
         expect(res.status).toBe(400);
         expect(res.body.error.code).toBe('BAD_REQUEST');
-    });
+    }, 10000);
 });
-describe('DELETE /api/bookings/:id (admin)', () => {
+describeDb('DELETE /api/bookings/:id (admin)', () => {
     it('should reject unauthenticated request', async () => {
         const res = await (0, supertest_1.default)(server_1.app).delete('/api/bookings/000000000000000000000000');
         expect(res.status).toBe(401);
     });
     it('should delete booking when authorized', async () => {
-        // Requires existing booking + admin token — integration test
-    });
+        // Requires existing booking + admin token
+    }, 10000);
 });

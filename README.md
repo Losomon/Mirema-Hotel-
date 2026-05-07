@@ -21,8 +21,8 @@ Mirema Hotel is a modern full-stack web platform for hotel management and online
 ### Backend
 - REST API: `/api/rooms` (full CRUD, MongoDB), `/api/bookings` (full CRUD)
 - JWT authentication with admin/member roles
-- Express server with CORS, health checks
-- Mongoose ODM with validation
+- Express + Zod validation + Helmet/rate-limit hardened
+- Jest + Supertest test suite
 
 ### Additional
 - Testing with Vitest

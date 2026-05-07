@@ -27,15 +27,21 @@ async function clearDatabase() {
 
 describe('Backend API', () => {
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
+    mongoServer = await MongoMemoryServer.create({
+      instance: {
+        launchTimeout: 60000, // 60 seconds for instance to start
+      },
+    });
     await mongoose.connect(mongoServer.getUri(), {
       dbName: 'mire-test',
     });
-  });
+  }, 300000); // 5 minutes for MongoDB download/start
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
+    if (mongoServer) {
+      await mongoServer.stop();
+    }
   });
 
   beforeEach(async () => {
