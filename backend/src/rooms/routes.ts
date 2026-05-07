@@ -12,12 +12,26 @@ router.get('/', (_req: Request, res: Response) => {
   ]);
 });
 
-// Placeholder examples of admin-only routes.
+// Admin-only room management endpoints.
+// TODO: Replace placeholder DB logic with real Room model.
 router.post('/', authenticate, requireRole('admin'), (_req: Request, res: Response) => {
   return res.status(501).json({
-    error: { code: 'NOT_IMPLEMENTED', message: 'Room creation not implemented yet' }
+    error: { code: 'NOT_IMPLEMENTED', message: 'Room creation not implemented yet' },
   });
 });
+
+router.put('/:id', authenticate, requireRole('admin'), (req: Request, res: Response) => {
+  return res.status(501).json({
+    error: { code: 'NOT_IMPLEMENTED', message: `Room update not implemented (id=${req.params.id})` },
+  });
+});
+
+router.delete('/:id', authenticate, requireRole('admin'), (req: Request, res: Response) => {
+  return res.status(501).json({
+    error: { code: 'NOT_IMPLEMENTED', message: `Room delete not implemented (id=${req.params.id})` },
+  });
+});
+
 
 export default router;
 

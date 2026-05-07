@@ -8,7 +8,7 @@ type JwtPayload = {
   email?: string;
 };
 
-type AuthedRequest = Request & {
+export type AuthedRequest = Request & {
   user?: {
     id: string;
     role: string;

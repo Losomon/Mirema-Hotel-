@@ -24,9 +24,10 @@ router.get('/', authenticate, requireRole('admin'), async (req: Request, res: Re
 
 // GET /api/bookings/:id - get a specific booking (admin only)
 router.get('/:id', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
+
   try {
     const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(id as string)) {
       return res.status(400).json({
         error: { code: 'BAD_REQUEST', message: 'Invalid booking ID' },
       });
@@ -90,8 +91,8 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
   try {
     const { id } = req.params;
     const { status, notes } = req.body || {};
-
-    if (!Types.ObjectId.isValid(id)) {
+    const idStr = id as string;
+    if (!Types.ObjectId.isValid(idStr)) {
       return res.status(400).json({
         error: { code: 'BAD_REQUEST', message: 'Invalid booking ID' },
       });
@@ -104,7 +105,7 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
     }
 
     const booking = await Booking.findByIdAndUpdate(
-      id,
+      idStr,
       { status, ...(notes !== undefined ? { notes } : {}) },
       { new: true, runValidators: true }
     ).populate('createdBy', 'email');
@@ -131,14 +132,15 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
 router.delete('/:id', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const idStr = id as string;
 
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(idStr)) {
       return res.status(400).json({
         error: { code: 'BAD_REQUEST', message: 'Invalid booking ID' },
       });
     }
 
-    const booking = await Booking.findByIdAndDelete(id);
+    const booking = await Booking.findByIdAndDelete(idStr);
     if (!booking) {
       return res.status(404).json({
         error: { code: 'NOT_FOUND', message: 'Booking not found' },

@@ -9,6 +9,7 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const routes_1 = __importDefault(require("./src/auth/routes"));
 const routes_2 = __importDefault(require("./src/rooms/routes"));
+const routes_3 = __importDefault(require("./src/bookings/routes"));
 const seedAdmin_1 = require("./src/seedAdmin");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -18,9 +19,7 @@ app.use(express_1.default.json());
 app.get('/health', (req, res) => res.json({ status: 'OK', message: 'Mirema Backend running!' }));
 app.use('/api/auth', routes_1.default);
 app.use('/api/rooms', routes_2.default);
-app.post('/api/bookings', (req, res) => {
-    res.json({ message: 'Booking created!', id: Date.now() });
-});
+app.use('/api/bookings', routes_3.default);
 async function start() {
     if (process.env.MONGO_URI) {
         try {
