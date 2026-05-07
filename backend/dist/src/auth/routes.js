@@ -8,22 +8,18 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const User_1 = __importDefault(require("../models/User"));
 const jwt_1 = require("./jwt");
 const middleware_1 = require("./middleware");
+const validation_1 = require("../validation");
 const router = express_1.default.Router();
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = (req.body ?? {});
-        if (!email || !password) {
-            return res.status(400).json({
-                error: { code: 'BAD_REQUEST', message: 'email and password are required' }
-            });
-        }
-        const user = await User_1.default.findOne({ email: String(email).toLowerCase().trim() });
+        const { email, password } = validation_1.loginSchema.parse(req.body);
+        const user = await User_1.default.findOne({ email });
         if (!user) {
             return res
                 .status(401)
                 .json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } });
         }
-        const ok = await bcrypt_1.default.compare(String(password), user.passwordHash);
+        const ok = await bcrypt_1.default.compare(password, user.passwordHash);
         if (!ok) {
             return res
                 .status(401)
@@ -36,6 +32,11 @@ router.post('/login', async (req, res) => {
         });
     }
     catch (e) {
+        if (e.name === 'ZodError') {
+            return res.status(400).json({
+                error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+            });
+        }
         console.error('[auth/login]', e);
         return res.status(500).json({
             error: { code: 'INTERNAL_ERROR', message: 'Login failed' }

@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { Types } from 'mongoose';
 
+// Auth validation schemas
+export const loginSchema = z.object({
+  email: z.string().email('Invalid email').toLowerCase().trim(),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
 // Room validation schemas
 export const createRoomSchema = z.object({
   name: z.string().min(1, 'Room name is required').trim(),
@@ -54,6 +60,7 @@ export const updateBookingSchema = z.object({
   notes: z.string().trim().optional(),
 });
 
+export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateRoomInput = z.infer<typeof createRoomSchema>;
 export type UpdateRoomInput = z.infer<typeof updateRoomSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;

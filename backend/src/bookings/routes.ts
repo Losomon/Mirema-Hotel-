@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 
 import Booking from './model';
 import { authenticate, requireRole, AuthedRequest } from '../auth/middleware';
+import { createBookingSchema, updateBookingSchema } from '../validation';
 
 const router = express.Router();
 
@@ -70,32 +71,18 @@ router.get('/:id', authenticate, requireRole('admin'), async (req: Request, res:
 // POST /api/bookings - create a booking (authenticated users only)
 router.post('/', authenticate, async (req: Request, res: Response) => {
   try {
-    const { guestName, guestEmail, guestPhone, roomId, checkIn, checkOut, guests, notes } =
-      req.body || {};
-
-    if (!guestName || !guestEmail || !guestPhone || !roomId || !checkIn || !checkOut || !guests) {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'All booking fields are required' },
-      });
-    }
-
-    if (!Types.ObjectId.isValid(roomId as string)) {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'Invalid room ID' },
-      });
-    }
-
+    const data = createBookingSchema.parse(req.body);
     const userId = (req as any).user!.id;
 
     const booking = await Booking.create({
-      guestName: String(guestName).trim(),
-      guestEmail: String(guestEmail).toLowerCase().trim(),
-      guestPhone: String(guestPhone).trim(),
-      roomId,
-      checkIn: new Date(checkIn),
-      checkOut: new Date(checkOut),
-      guests: Number(guests),
-      notes: notes ? String(notes).trim() : undefined,
+      guestName: data.guestName,
+      guestEmail: data.guestEmail,
+      guestPhone: data.guestPhone,
+      roomId: data.roomId,
+      checkIn: data.checkIn,
+      checkOut: data.checkOut,
+      guests: data.guests,
+      notes: data.notes,
       createdBy: userId,
       status: 'pending',
     });
@@ -104,7 +91,12 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       message: 'Booking created successfully',
       booking: { id: String(booking._id), ...booking.toObject() },
     });
-  } catch (e) {
+  } catch (e: any) {
+    if (e.name === 'ZodError') {
+      return res.status(400).json({
+        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+      });
+    }
     console.error('[bookings/create]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to create booking' },
@@ -116,23 +108,19 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, notes } = req.body || {};
     const idStr = id as string;
+
     if (!Types.ObjectId.isValid(idStr)) {
       return res.status(400).json({
         error: { code: 'BAD_REQUEST', message: 'Invalid booking ID' },
       });
     }
 
-    if (!status || !['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'Valid status is required' },
-      });
-    }
+    const data = updateBookingSchema.parse(req.body);
 
     const booking = await Booking.findByIdAndUpdate(
       idStr,
-      { status, ...(notes !== undefined ? { notes } : {}) },
+      { status: data.status, ...(data.notes !== undefined ? { notes: data.notes } : {}) },
       { new: true, runValidators: true }
     ).populate('createdBy', 'email').populate('roomId', 'name price');
 
@@ -146,7 +134,12 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
       message: 'Booking updated successfully',
       booking: { id: String(booking._id), ...booking.toObject() },
     });
-  } catch (e) {
+  } catch (e: any) {
+    if (e.name === 'ZodError') {
+      return res.status(400).json({
+        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+      });
+    }
     console.error('[bookings/update]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to update booking' },

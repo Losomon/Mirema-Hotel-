@@ -1,8 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateBookingSchema = exports.createBookingSchema = exports.availabilitySchema = exports.paginationSchema = exports.updateRoomSchema = exports.createRoomSchema = void 0;
+exports.updateBookingSchema = exports.createBookingSchema = exports.availabilitySchema = exports.paginationSchema = exports.updateRoomSchema = exports.createRoomSchema = exports.loginSchema = void 0;
 const zod_1 = require("zod");
 const mongoose_1 = require("mongoose");
+// Auth validation schemas
+exports.loginSchema = zod_1.z.object({
+    email: zod_1.z.string().email('Invalid email').toLowerCase().trim(),
+    password: zod_1.z.string().min(6, 'Password must be at least 6 characters'),
+});
 // Room validation schemas
 exports.createRoomSchema = zod_1.z.object({
     name: zod_1.z.string().min(1, 'Room name is required').trim(),
