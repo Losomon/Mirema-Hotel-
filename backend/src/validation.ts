@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Types } from 'mongoose';
 
 // Room validation schemas
 export const createRoomSchema = z.object({
@@ -21,22 +22,25 @@ export const paginationSchema = z.object({
 });
 
 // Booking validation schemas
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
 export const createBookingSchema = z.object({
   guestName: z.string().min(1, 'Guest name is required').trim(),
   guestEmail: z.string().email('Invalid email').toLowerCase().trim(),
   guestPhone: z.string().min(1, 'Phone is required').trim(),
-  roomName: z.string().min(1, 'Room name is required').trim(),
-  checkIn: z.string().datetime('Invalid check-in date format'),
-  checkOut: z.string().datetime('Invalid check-out date format'),
+  roomId: z.string().refine(id => Types.ObjectId.isValid(id), { message: 'Invalid room ID' }),
+  checkIn: z.coerce.date().min(today, 'Check-in date cannot be in the past'),
+  checkOut: z.coerce.date().min(today, 'Check-out date cannot be in the past'),
   guests: z.number().int().min(1, 'Guests must be at least 1'),
   notes: z.string().trim().optional(),
 }).refine(
-  (data) => new Date(data.checkOut) > new Date(data.checkIn),
+  (data) => data.checkOut > data.checkIn,
   { message: 'Check-out date must be after check-in date', path: ['checkOut'] }
 );
 
 export const updateBookingSchema = z.object({
-  status: z.enum(['pending', 'confirmed', 'cancelled']),
+  status: z.enum(['pending', 'confirmed', 'cancelled', 'completed']),
   notes: z.string().trim().optional(),
 });
 

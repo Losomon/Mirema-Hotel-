@@ -2,47 +2,37 @@ import express, { Request, Response } from 'express';
 import { Types } from 'mongoose';
 
 import Booking from './model';
-import { authenticate, requireRole } from '../auth/middleware';
-import { paginationSchema, createBookingSchema, updateBookingSchema } from '../validation';
+import { authenticate, requireRole, AuthedRequest } from '../auth/middleware';
 
 const router = express.Router();
 
+// GET /api/bookings/me - current user's own bookings (authenticated members)
+router.get('/me', authenticate, async (req: AuthedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const bookings = await Booking.find({ createdBy: userId })
+      .populate('roomId', 'name price')
+      .sort({ createdAt: -1 })
+      .lean();
+    return res.json({ bookings });
+  } catch (e) {
+    console.error('[bookings/me]', e);
+    return res.status(500).json({
+      error: { code: 'INTERNAL_ERROR', message: 'Failed to get user bookings' },
+    });
+  }
+});
+
 // GET /api/bookings - list all bookings (admin only)
-// Query params: page, limit, sort, order
 router.get('/', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
-    const query = paginationSchema.parse(req.query);
-    const { page, limit, sort, order } = query;
-
-    const skip = (page - 1) * limit;
-    const sortOrder = order === 'asc' ? 1 : -1;
-    const sortObj: any = sort ? { [sort]: sortOrder } : { createdAt: -1 };
-
-    const [bookings, total] = await Promise.all([
-      Booking.find()
-        .populate('createdBy', 'email')
-        .sort(sortObj)
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Booking.countDocuments(),
-    ]);
-
-    return res.json({
-      bookings,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    });
-  } catch (e: any) {
-    if (e.name === 'ZodError') {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
-      });
-    }
+    const bookings = await Booking.find()
+      .populate('createdBy', 'email')
+      .populate('roomId', 'name price')
+      .sort({ createdAt: -1 })
+      .lean();
+    return res.json({ bookings });
+  } catch (e) {
     console.error('[bookings/list]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to list bookings' },
@@ -52,7 +42,6 @@ router.get('/', authenticate, requireRole('admin'), async (req: Request, res: Re
 
 // GET /api/bookings/:id - get a specific booking (admin only)
 router.get('/:id', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
-
   try {
     const { id } = req.params;
     if (!Types.ObjectId.isValid(id as string)) {
@@ -60,7 +49,10 @@ router.get('/:id', authenticate, requireRole('admin'), async (req: Request, res:
         error: { code: 'BAD_REQUEST', message: 'Invalid booking ID' },
       });
     }
-    const booking = await Booking.findById(id).populate('createdBy', 'email').lean();
+    const booking = await Booking.findById(id)
+      .populate('createdBy', 'email')
+      .populate('roomId', 'name price')
+      .lean();
     if (!booking) {
       return res.status(404).json({
         error: { code: 'NOT_FOUND', message: 'Booking not found' },
@@ -78,11 +70,32 @@ router.get('/:id', authenticate, requireRole('admin'), async (req: Request, res:
 // POST /api/bookings - create a booking (authenticated users only)
 router.post('/', authenticate, async (req: Request, res: Response) => {
   try {
-    const bookingData = createBookingSchema.parse(req.body);
+    const { guestName, guestEmail, guestPhone, roomId, checkIn, checkOut, guests, notes } =
+      req.body || {};
+
+    if (!guestName || !guestEmail || !guestPhone || !roomId || !checkIn || !checkOut || !guests) {
+      return res.status(400).json({
+        error: { code: 'BAD_REQUEST', message: 'All booking fields are required' },
+      });
+    }
+
+    if (!Types.ObjectId.isValid(roomId as string)) {
+      return res.status(400).json({
+        error: { code: 'BAD_REQUEST', message: 'Invalid room ID' },
+      });
+    }
+
     const userId = (req as any).user!.id;
 
     const booking = await Booking.create({
-      ...bookingData,
+      guestName: String(guestName).trim(),
+      guestEmail: String(guestEmail).toLowerCase().trim(),
+      guestPhone: String(guestPhone).trim(),
+      roomId,
+      checkIn: new Date(checkIn),
+      checkOut: new Date(checkOut),
+      guests: Number(guests),
+      notes: notes ? String(notes).trim() : undefined,
       createdBy: userId,
       status: 'pending',
     });
@@ -91,12 +104,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       message: 'Booking created successfully',
       booking: { id: String(booking._id), ...booking.toObject() },
     });
-  } catch (e: any) {
-    if (e.name === 'ZodError') {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
-      });
-    }
+  } catch (e) {
     console.error('[bookings/create]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to create booking' },
@@ -108,20 +116,25 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { status, notes } = req.body || {};
     const idStr = id as string;
-
     if (!Types.ObjectId.isValid(idStr)) {
       return res.status(400).json({
         error: { code: 'BAD_REQUEST', message: 'Invalid booking ID' },
       });
     }
 
-    const updateData = updateBookingSchema.parse(req.body);
+    if (!status || !['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
+      return res.status(400).json({
+        error: { code: 'BAD_REQUEST', message: 'Valid status is required' },
+      });
+    }
+
     const booking = await Booking.findByIdAndUpdate(
       idStr,
-      updateData,
+      { status, ...(notes !== undefined ? { notes } : {}) },
       { new: true, runValidators: true }
-    ).populate('createdBy', 'email');
+    ).populate('createdBy', 'email').populate('roomId', 'name price');
 
     if (!booking) {
       return res.status(404).json({
@@ -133,12 +146,7 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
       message: 'Booking updated successfully',
       booking: { id: String(booking._id), ...booking.toObject() },
     });
-  } catch (e: any) {
-    if (e.name === 'ZodError') {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
-      });
-    }
+  } catch (e) {
     console.error('[bookings/update]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to update booking' },

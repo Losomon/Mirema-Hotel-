@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateBookingSchema = exports.createBookingSchema = exports.paginationSchema = exports.updateRoomSchema = exports.createRoomSchema = void 0;
 const zod_1 = require("zod");
+const mongoose_1 = require("mongoose");
 // Room validation schemas
 exports.createRoomSchema = zod_1.z.object({
     name: zod_1.z.string().min(1, 'Room name is required').trim(),
@@ -20,17 +21,19 @@ exports.paginationSchema = zod_1.z.object({
     order: zod_1.z.enum(['asc', 'desc']).default('asc'),
 });
 // Booking validation schemas
+const today = new Date();
+today.setHours(0, 0, 0, 0);
 exports.createBookingSchema = zod_1.z.object({
     guestName: zod_1.z.string().min(1, 'Guest name is required').trim(),
     guestEmail: zod_1.z.string().email('Invalid email').toLowerCase().trim(),
     guestPhone: zod_1.z.string().min(1, 'Phone is required').trim(),
-    roomName: zod_1.z.string().min(1, 'Room name is required').trim(),
-    checkIn: zod_1.z.string().datetime('Invalid check-in date format'),
-    checkOut: zod_1.z.string().datetime('Invalid check-out date format'),
+    roomId: zod_1.z.string().refine(id => mongoose_1.Types.ObjectId.isValid(id), { message: 'Invalid room ID' }),
+    checkIn: zod_1.z.coerce.date().min(today, 'Check-in date cannot be in the past'),
+    checkOut: zod_1.z.coerce.date().min(today, 'Check-out date cannot be in the past'),
     guests: zod_1.z.number().int().min(1, 'Guests must be at least 1'),
     notes: zod_1.z.string().trim().optional(),
-}).refine((data) => new Date(data.checkOut) > new Date(data.checkIn), { message: 'Check-out date must be after check-in date', path: ['checkOut'] });
+}).refine((data) => data.checkOut > data.checkIn, { message: 'Check-out date must be after check-in date', path: ['checkOut'] });
 exports.updateBookingSchema = zod_1.z.object({
-    status: zod_1.z.enum(['pending', 'confirmed', 'cancelled']),
+    status: zod_1.z.enum(['pending', 'confirmed', 'cancelled', 'completed']),
     notes: zod_1.z.string().trim().optional(),
 });
