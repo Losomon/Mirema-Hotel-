@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.app = void 0;
 const express_1 = __importDefault(require("express"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const cors_1 = __importDefault(require("cors"));
@@ -14,15 +15,15 @@ const routes_2 = __importDefault(require("./src/rooms/routes"));
 const routes_3 = __importDefault(require("./src/bookings/routes"));
 const seedAdmin_1 = require("./src/seedAdmin");
 dotenv_1.default.config();
-const app = (0, express_1.default)();
+exports.app = (0, express_1.default)();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 // Security middleware
-app.use((0, helmet_1.default)());
+exports.app.use((0, helmet_1.default)());
 // CORS — allow only frontend origin(s)
 const allowedOrigins = process.env.FRONTEND_URL
     ? [process.env.FRONTEND_URL]
     : ['http://localhost:4321', 'http://127.0.0.1:4321']; // Astro dev server
-app.use((0, cors_1.default)({
+exports.app.use((0, cors_1.default)({
     origin: allowedOrigins,
     credentials: true,
 }));
@@ -34,7 +35,7 @@ const globalLimiter = (0, express_rate_limit_1.default)({
     standardHeaders: true,
     legacyHeaders: false,
 });
-app.use(globalLimiter);
+exports.app.use(globalLimiter);
 // Stricter rate limit for auth endpoints
 const authLimiter = (0, express_rate_limit_1.default)({
     windowMs: 60 * 60 * 1000, // 1 hour
@@ -43,16 +44,16 @@ const authLimiter = (0, express_rate_limit_1.default)({
     standardHeaders: true,
     legacyHeaders: false,
 });
-app.use('/api/auth', authLimiter);
-app.use(express_1.default.json());
+exports.app.use('/api/auth', authLimiter);
+exports.app.use(express_1.default.json());
 // Health check — excluded from rate limiting
-app.get('/health', (req, res) => res.json({ status: 'OK', message: 'Mirema Backend running!' }));
+exports.app.get('/health', (req, res) => res.json({ status: 'OK', message: 'Mirema Backend running!' }));
 // API routes
-app.use('/api/auth', routes_1.default);
-app.use('/api/rooms', routes_2.default);
-app.use('/api/bookings', routes_3.default);
+exports.app.use('/api/auth', routes_1.default);
+exports.app.use('/api/rooms', routes_2.default);
+exports.app.use('/api/bookings', routes_3.default);
 // Centralized error handler
-app.use((err, req, res, next) => {
+exports.app.use((err, req, res, next) => {
     console.error('[error]', err);
     // Zod validation errors
     if (err.name === 'ZodError') {
@@ -111,6 +112,8 @@ async function start() {
     else {
         console.log('No MONGO_URI - using mock data (production: set .env)');
     }
-    app.listen(PORT, () => console.log(`Server on port ${PORT}`));
+    exports.app.listen(PORT, () => console.log(`Server on port ${PORT}`));
 }
-start();
+if (require.main === module) {
+    start();
+}
