@@ -40,7 +40,7 @@ router.get('/', async (req: Request, res: Response) => {
   } catch (e: any) {
     if (e.name === 'ZodError') {
       return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.issues },
       });
     }
     console.error('[rooms/list]', e);
@@ -90,13 +90,13 @@ router.get('/availability', async (req: Request, res: Response) => {
 
     return res.json({ rooms: result, startDate, endDate });
 
-  } catch (e: any) {
-    if (e.name === 'ZodError') {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
-      });
-    }
-    console.error('[rooms/availability]', e);
+   } catch (e: any) {
+     if (e.name === 'ZodError') {
+       return res.status(400).json({
+         error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.issues },
+       });
+     }
+     console.error('[rooms/availability]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to check availability' },
     });
@@ -137,13 +137,13 @@ router.post('/', authenticate, requireRole('admin'), async (req: Request, res: R
       message: 'Room created successfully',
       room: { id: String(room._id), ...room.toObject() },
     });
-  } catch (e: any) {
-    if (e.name === 'ZodError') {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
-      });
-    }
-    console.error('[rooms/create]', e);
+   } catch (e: any) {
+     if (e.name === 'ZodError') {
+       return res.status(400).json({
+         error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.issues },
+       });
+     }
+     console.error('[rooms/create]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to create room' },
     });
@@ -179,13 +179,13 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
       message: 'Room updated successfully',
       room: { id: String(room._id), ...room },
     });
-  } catch (e: any) {
-    if (e.name === 'ZodError') {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
-      });
-    }
-    console.error('[rooms/update]', e);
+   } catch (e: any) {
+     if (e.name === 'ZodError') {
+       return res.status(400).json({
+         error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.issues },
+       });
+     }
+     console.error('[rooms/update]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to update room' },
     });

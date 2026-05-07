@@ -31,13 +31,13 @@ router.post('/login', async (req: Request, res: Response) => {
       token,
       user: { id: String(user._id), email: user.email, role: user.role }
     });
-  } catch (e: any) {
-    if (e.name === 'ZodError') {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
-      });
-    }
-    console.error('[auth/login]', e);
+   } catch (e: any) {
+     if (e.name === 'ZodError') {
+       return res.status(400).json({
+         error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.issues },
+       });
+     }
+     console.error('[auth/login]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Login failed' }
     });
