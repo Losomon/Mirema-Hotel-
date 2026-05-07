@@ -29,7 +29,7 @@ router.post('/login', async (req, res) => {
                 .status(401)
                 .json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } });
         }
-        const token = (0, jwt_1.signToken)({ userId: user._id, role: user.role, email: user.email });
+        const token = (0, jwt_1.signToken)({ userId: String(user._id), role: user.role, email: user.email });
         return res.json({
             token,
             user: { id: String(user._id), email: user.email, role: user.role }
@@ -43,7 +43,6 @@ router.post('/login', async (req, res) => {
     }
 });
 router.post('/logout', async (_req, res) => {
-    // Stateless JWT: client should delete the token.
     return res.json({ message: 'Logged out' });
 });
 router.get('/me', middleware_1.authenticate, async (req, res) => {

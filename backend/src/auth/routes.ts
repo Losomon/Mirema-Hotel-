@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 
 import User from '../models/User';
 import { signToken } from './jwt';
-import { authenticate, requireRole } from './middleware';
+import { authenticate, requireRole, AuthedRequest } from './middleware';
 
 const router = express.Router();
 
@@ -34,7 +34,7 @@ router.post('/login', async (req: Request, res: Response) => {
         .json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } });
     }
 
-    const token = signToken({ userId: user._id, role: user.role, email: user.email });
+    const token = signToken({ userId: String(user._id), role: user.role, email: user.email });
     return res.json({
       token,
       user: { id: String(user._id), email: user.email, role: user.role }
@@ -48,11 +48,10 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 router.post('/logout', async (_req: Request, res: Response) => {
-  // Stateless JWT: client should delete the token.
   return res.json({ message: 'Logged out' });
 });
 
-router.get('/me', authenticate, async (req: Request, res: Response) => {
+router.get('/me', authenticate, async (req: AuthedRequest, res: Response) => {
   return res.json({
     user: {
       id: req.user!.id,

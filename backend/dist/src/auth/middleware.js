@@ -33,12 +33,13 @@ function authenticate(req, res, next) {
 }
 function requireRole(role) {
     return (req, res, next) => {
-        if (!req.user) {
+        const authedReq = req;
+        if (!authedReq.user) {
             return res.status(401).json({
                 error: { code: 'UNAUTHORIZED', message: 'Not authenticated' }
             });
         }
-        if (req.user.role !== role) {
+        if (authedReq.user.role !== role) {
             return res.status(403).json({
                 error: { code: 'FORBIDDEN', message: 'Insufficient role' }
             });
