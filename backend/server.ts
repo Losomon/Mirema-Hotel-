@@ -1,22 +1,26 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-require('dotenv').config();
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import dotenv from 'dotenv';
 
-const authRoutes = require('./src/auth/routes');
-const roomsRoutes = require('./src/rooms/routes');
-const bookingsRoutes = require('./src/bookings/routes');
-const { seedAdminUser } = require('./src/seedAdmin');
+import authRoutes from './src/auth/routes';
+import roomsRoutes from './src/rooms/routes';
+import bookingsRoutes from './src/bookings/routes';
+import { seedAdminUser } from './src/seedAdmin';
+
+
+
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.get('/health', (req, res) => res.json({ status: 'OK', message: 'Mirema Backend running!' }));
+app.get('/health', (req, res) =>
+  res.json({ status: 'OK', message: 'Mirema Backend running!' })
+);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomsRoutes);
@@ -29,8 +33,8 @@ async function start() {
       console.log('MongoDB connected');
       await seedAdminUser();
       console.log('Admin seed complete (if env configured)');
-    } catch (err) {
-      console.log('Mongo connection failed (ok for dev):', err.message);
+    } catch (err: any) {
+      console.log('Mongo connection failed (ok for dev):', err?.message ?? err);
     }
   } else {
     console.log('No MONGO_URI - using mock data (production: set .env)');
@@ -40,5 +44,4 @@ async function start() {
 }
 
 start();
-
 

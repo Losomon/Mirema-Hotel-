@@ -37,12 +37,8 @@ export function AdminProtectedRoute({
     );
   }
 
-  // TODO: Add admin role check when backend supports roles
-  // For now, allow any authenticated user (demo only)
-  // In production, check: member.roles?.includes('admin') or member.customFields?.isAdmin
-  const isAdmin = true; // Placeholder - implement proper role check
-
-  if (!isAdmin) {
+  // Check admin role
+  if (member?.role !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
