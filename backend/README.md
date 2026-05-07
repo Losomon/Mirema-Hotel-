@@ -308,8 +308,40 @@ npm run build
 # Run compiled server
 npm start
 
-# Run integration tests (template)
-ts-node src/scripts/integration-tests.ts
+# Run test suite (requires MongoDB)
+npm test
+```
+
+## Testing
+
+The backend uses **Jest** + **Supertest** for API integration tests.
+
+**Test Coverage**:
+- ✅ `GET /health` — health check endpoint
+- ✅ `GET /api/rooms` — list rooms with pagination
+- ✅ `GET /api/rooms/:id` — get single room
+- ✅ `GET /api/rooms/availability` — availability engine
+- ✅ `POST /api/bookings` — create booking (member)
+- ✅ `GET /api/bookings/me` — user's own bookings
+- ✅ `GET /api/bookings` — admin list all
+- ✅ `GET /api/bookings/:id` — admin get one
+- ✅ `PUT /api/bookings/:id` — admin update status
+- ✅ `DELETE /api/bookings/:id` — admin delete
+- ✅ Validation schemas (Zod) — all schemas unit tested
+
+**Running Tests**:
+```bash
+# Ensure MongoDB is running
+mongod  # or start your Atlas connection
+
+# Run all tests
+npm test
+
+# Watch mode
+npm test -- --watch
+
+# Specific test file
+npm test -- rooms.test.ts
 ```
 
 ## Security Notes
