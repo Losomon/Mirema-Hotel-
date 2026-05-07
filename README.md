@@ -4,7 +4,7 @@
 [![React](https://img.shields.io/badge/React-18.3-blue)](https://react.dev)
 [![Node.js](https://img.shields.io/badge/Node-20-green)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)](https://typescriptlang.org)
-[![MIT License](https://img.shields.io/github/license/solom-mirema/Mirema-Hotel-)](LICENSE)
+[![MIT License](https://img.shields.io/github/license/losomon/Mirema-Hotel-)](LICENSE)
 [![Issues](https://img.shields.io/github/issues/losomon/Mirema-Hotel-)](https://github.com/losomon/Mirema-Hotel-/issues)
 
 Mirema Hotel is a modern full-stack web platform for hotel management and online booking. Featuring a responsive frontend built with Astro, React, TypeScript, and Tailwind CSS, integrated with Wix CMS/members, and a Node.js/Express/MongoDB backend API for rooms and bookings.
