@@ -3,18 +3,46 @@ import { Types } from 'mongoose';
 
 import Booking from './model';
 import { authenticate, requireRole } from '../auth/middleware';
+import { paginationSchema, createBookingSchema, updateBookingSchema } from '../validation';
 
 const router = express.Router();
 
 // GET /api/bookings - list all bookings (admin only)
+// Query params: page, limit, sort, order
 router.get('/', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
-    const bookings = await Booking.find()
-      .populate('createdBy', 'email')
-      .sort({ createdAt: -1 })
-      .lean();
-    return res.json({ bookings });
-  } catch (e) {
+    const query = paginationSchema.parse(req.query);
+    const { page, limit, sort, order } = query;
+
+    const skip = (page - 1) * limit;
+    const sortOrder = order === 'asc' ? 1 : -1;
+    const sortObj: any = sort ? { [sort]: sortOrder } : { createdAt: -1 };
+
+    const [bookings, total] = await Promise.all([
+      Booking.find()
+        .populate('createdBy', 'email')
+        .sort(sortObj)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Booking.countDocuments(),
+    ]);
+
+    return res.json({
+      bookings,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (e: any) {
+    if (e.name === 'ZodError') {
+      return res.status(400).json({
+        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+      });
+    }
     console.error('[bookings/list]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to list bookings' },
@@ -50,26 +78,11 @@ router.get('/:id', authenticate, requireRole('admin'), async (req: Request, res:
 // POST /api/bookings - create a booking (authenticated users only)
 router.post('/', authenticate, async (req: Request, res: Response) => {
   try {
-    const { guestName, guestEmail, guestPhone, roomName, checkIn, checkOut, guests, notes } =
-      req.body || {};
-
-    if (!guestName || !guestEmail || !guestPhone || !roomName || !checkIn || !checkOut || !guests) {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'All booking fields are required' },
-      });
-    }
-
+    const bookingData = createBookingSchema.parse(req.body);
     const userId = (req as any).user!.id;
 
     const booking = await Booking.create({
-      guestName: String(guestName).trim(),
-      guestEmail: String(guestEmail).toLowerCase().trim(),
-      guestPhone: String(guestPhone).trim(),
-      roomName: String(roomName).trim(),
-      checkIn: String(checkIn).trim(),
-      checkOut: String(checkOut).trim(),
-      guests: Number(guests),
-      notes: notes ? String(notes).trim() : undefined,
+      ...bookingData,
       createdBy: userId,
       status: 'pending',
     });
@@ -78,7 +91,12 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       message: 'Booking created successfully',
       booking: { id: String(booking._id), ...booking.toObject() },
     });
-  } catch (e) {
+  } catch (e: any) {
+    if (e.name === 'ZodError') {
+      return res.status(400).json({
+        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+      });
+    }
     console.error('[bookings/create]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to create booking' },
@@ -90,23 +108,18 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, notes } = req.body || {};
     const idStr = id as string;
+
     if (!Types.ObjectId.isValid(idStr)) {
       return res.status(400).json({
         error: { code: 'BAD_REQUEST', message: 'Invalid booking ID' },
       });
     }
 
-    if (!status || !['pending', 'confirmed', 'cancelled'].includes(status)) {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'Valid status is required' },
-      });
-    }
-
+    const updateData = updateBookingSchema.parse(req.body);
     const booking = await Booking.findByIdAndUpdate(
       idStr,
-      { status, ...(notes !== undefined ? { notes } : {}) },
+      updateData,
       { new: true, runValidators: true }
     ).populate('createdBy', 'email');
 
@@ -120,7 +133,12 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
       message: 'Booking updated successfully',
       booking: { id: String(booking._id), ...booking.toObject() },
     });
-  } catch (e) {
+  } catch (e: any) {
+    if (e.name === 'ZodError') {
+      return res.status(400).json({
+        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+      });
+    }
     console.error('[bookings/update]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to update booking' },

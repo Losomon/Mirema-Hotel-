@@ -1,0 +1,36 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateBookingSchema = exports.createBookingSchema = exports.paginationSchema = exports.updateRoomSchema = exports.createRoomSchema = void 0;
+const zod_1 = require("zod");
+// Room validation schemas
+exports.createRoomSchema = zod_1.z.object({
+    name: zod_1.z.string().min(1, 'Room name is required').trim(),
+    description: zod_1.z.string().trim().optional(),
+    price: zod_1.z.number().min(0, 'Price must be non-negative'),
+    capacity: zod_1.z.number().int().min(1, 'Capacity must be at least 1'),
+    amenities: zod_1.z.array(zod_1.z.string().trim()).optional(),
+    imageUrl: zod_1.z.string().url('Invalid image URL').optional().or(zod_1.z.literal('')),
+    isActive: zod_1.z.boolean().optional().default(true),
+});
+exports.updateRoomSchema = exports.createRoomSchema.partial();
+exports.paginationSchema = zod_1.z.object({
+    page: zod_1.z.coerce.number().int().min(1).default(1),
+    limit: zod_1.z.coerce.number().int().min(1).max(100).default(10),
+    sort: zod_1.z.enum(['price', 'name', 'capacity']).optional(),
+    order: zod_1.z.enum(['asc', 'desc']).default('asc'),
+});
+// Booking validation schemas
+exports.createBookingSchema = zod_1.z.object({
+    guestName: zod_1.z.string().min(1, 'Guest name is required').trim(),
+    guestEmail: zod_1.z.string().email('Invalid email').toLowerCase().trim(),
+    guestPhone: zod_1.z.string().min(1, 'Phone is required').trim(),
+    roomName: zod_1.z.string().min(1, 'Room name is required').trim(),
+    checkIn: zod_1.z.string().datetime('Invalid check-in date format'),
+    checkOut: zod_1.z.string().datetime('Invalid check-out date format'),
+    guests: zod_1.z.number().int().min(1, 'Guests must be at least 1'),
+    notes: zod_1.z.string().trim().optional(),
+}).refine((data) => new Date(data.checkOut) > new Date(data.checkIn), { message: 'Check-out date must be after check-in date', path: ['checkOut'] });
+exports.updateBookingSchema = zod_1.z.object({
+    status: zod_1.z.enum(['pending', 'confirmed', 'cancelled']),
+    notes: zod_1.z.string().trim().optional(),
+});
