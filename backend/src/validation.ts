@@ -21,10 +21,20 @@ export const paginationSchema = z.object({
   order: z.enum(['asc', 'desc']).default('asc'),
 });
 
-// Booking validation schemas
+// Availability validation
 const today = new Date();
 today.setHours(0, 0, 0, 0);
 
+export const availabilitySchema = z.object({
+  roomId: z.string().refine(v => Types.ObjectId.isValid(v), { message: 'Invalid room ID' }).optional(),
+  startDate: z.coerce.date().min(today, 'Start date cannot be in the past'),
+  endDate: z.coerce.date().min(today, 'End date cannot be in the past'),
+}).refine(d => d.endDate > d.startDate, {
+  message: 'End date must be after start date',
+  path: ['endDate'],
+});
+
+// Booking validation schemas
 export const createBookingSchema = z.object({
   guestName: z.string().min(1, 'Guest name is required').trim(),
   guestEmail: z.string().email('Invalid email').toLowerCase().trim(),
@@ -47,5 +57,6 @@ export const updateBookingSchema = z.object({
 export type CreateRoomInput = z.infer<typeof createRoomSchema>;
 export type UpdateRoomInput = z.infer<typeof updateRoomSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;
+export type AvailabilityInput = z.infer<typeof availabilitySchema>;
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 export type UpdateBookingInput = z.infer<typeof updateBookingSchema>;

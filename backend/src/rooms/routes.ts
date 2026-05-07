@@ -2,8 +2,9 @@ import express, { Request, Response } from 'express';
 import { Types } from 'mongoose';
 
 import Room from './model';
+import Booking from '../bookings/model';
 import { authenticate, requireRole } from '../auth/middleware';
-import { paginationSchema, createRoomSchema, updateRoomSchema } from '../validation';
+import { paginationSchema, createRoomSchema, updateRoomSchema, availabilitySchema } from '../validation';
 
 const router = express.Router();
 
@@ -45,6 +46,59 @@ router.get('/', async (req: Request, res: Response) => {
     console.error('[rooms/list]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Failed to list rooms' },
+    });
+  }
+});
+
+// GET /api/rooms/availability?roomId=&startDate=&endDate=
+// Public: check if a specific room is available, or list all available rooms
+router.get('/availability', async (req: Request, res: Response) => {
+  try {
+    const { roomId, startDate, endDate } = availabilitySchema.parse(req.query);
+
+    // Find all bookings that overlap the requested range
+    // Overlap condition: checkIn < endDate AND checkOut > startDate
+    const overlappingBookings = await Booking.find({
+      status: { $in: ['pending', 'confirmed'] },
+      checkIn:  { $lt: endDate },
+      checkOut: { $gt: startDate },
+      ...(roomId ? { roomId } : {}),
+    }).select('roomId').lean();
+
+    const bookedRoomIds = new Set(overlappingBookings.map(b => String(b.roomId)));
+
+    if (roomId) {
+      // Single room check
+      const room = await Room.findOne({ _id: roomId, isActive: true }).lean();
+      if (!room) {
+        return res.status(404).json({
+          error: { code: 'NOT_FOUND', message: 'Room not found' },
+        });
+      }
+
+      const isAvailable = !bookedRoomIds.has(roomId);
+      return res.json({ roomId, isAvailable, startDate, endDate });
+    }
+
+    // All rooms check — return each room with availability flag
+    const rooms = await Room.find({ isActive: true }).lean();
+    const result = rooms.map(room => ({
+      ...room,
+      id: String(room._id),
+      isAvailable: !bookedRoomIds.has(String(room._id)),
+    }));
+
+    return res.json({ rooms: result, startDate, endDate });
+
+  } catch (e: any) {
+    if (e.name === 'ZodError') {
+      return res.status(400).json({
+        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+      });
+    }
+    console.error('[rooms/availability]', e);
+    return res.status(500).json({
+      error: { code: 'INTERNAL_ERROR', message: 'Failed to check availability' },
     });
   }
 });
