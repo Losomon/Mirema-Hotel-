@@ -308,13 +308,13 @@ npm run build
 # Run compiled server
 npm start
 
-# Run test suite (requires MongoDB)
+# Run test suite
 npm test
 ```
 
 ## Testing
 
-The backend uses **Jest** + **Supertest** for API integration tests.
+The backend uses **Vitest** + **Supertest** for API integration tests with an in-memory MongoDB instance.
 
 **Test Coverage**:
 - ✅ `GET /health` — health check endpoint
@@ -331,17 +331,14 @@ The backend uses **Jest** + **Supertest** for API integration tests.
 
 **Running Tests**:
 ```bash
-# Ensure MongoDB is running
-mongod  # or start your Atlas connection
-
 # Run all tests
 npm test
 
 # Watch mode
-npm test -- --watch
+npm run test:watch
 
 # Specific test file
-npm test -- rooms.test.ts
+npm test -- tests/api.test.ts
 ```
 
 ## Security Notes
