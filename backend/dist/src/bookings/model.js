@@ -38,16 +38,21 @@ const bookingSchema = new mongoose_1.Schema({
     guestName: { type: String, required: true },
     guestEmail: { type: String, required: true },
     guestPhone: { type: String, required: true },
-    roomName: { type: String, required: true },
-    checkIn: { type: String, required: true },
-    checkOut: { type: String, required: true },
+    roomId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Room', required: true },
+    checkIn: { type: Date, required: true },
+    checkOut: { type: Date, required: true },
     guests: { type: Number, required: true, min: 1 },
     status: {
         type: String,
-        enum: ['pending', 'confirmed', 'cancelled'],
+        enum: ['pending', 'confirmed', 'cancelled', 'completed'],
         default: 'pending',
     },
     notes: { type: String },
     createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
 }, { timestamps: true });
+// Enforce checkOut > checkIn
+bookingSchema.path('checkOut').validate(function (value) {
+    // this refers to the document being validated
+    return this.checkIn instanceof Date && value > this.checkIn;
+}, 'Check-out date must be after check-in date');
 exports.default = mongoose_1.default.model('Booking', bookingSchema);
