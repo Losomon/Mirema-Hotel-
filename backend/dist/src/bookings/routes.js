@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const mongoose_1 = require("mongoose");
 const model_1 = __importDefault(require("./model"));
 const middleware_1 = require("../auth/middleware");
+const validation_1 = require("../validation");
 const router = express_1.default.Router();
 // GET /api/bookings/me - current user's own bookings (authenticated members)
 router.get('/me', middleware_1.authenticate, async (req, res) => {
@@ -72,27 +73,17 @@ router.get('/:id', middleware_1.authenticate, (0, middleware_1.requireRole)('adm
 // POST /api/bookings - create a booking (authenticated users only)
 router.post('/', middleware_1.authenticate, async (req, res) => {
     try {
-        const { guestName, guestEmail, guestPhone, roomId, checkIn, checkOut, guests, notes } = req.body || {};
-        if (!guestName || !guestEmail || !guestPhone || !roomId || !checkIn || !checkOut || !guests) {
-            return res.status(400).json({
-                error: { code: 'BAD_REQUEST', message: 'All booking fields are required' },
-            });
-        }
-        if (!mongoose_1.Types.ObjectId.isValid(roomId)) {
-            return res.status(400).json({
-                error: { code: 'BAD_REQUEST', message: 'Invalid room ID' },
-            });
-        }
+        const data = validation_1.createBookingSchema.parse(req.body);
         const userId = req.user.id;
         const booking = await model_1.default.create({
-            guestName: String(guestName).trim(),
-            guestEmail: String(guestEmail).toLowerCase().trim(),
-            guestPhone: String(guestPhone).trim(),
-            roomId,
-            checkIn: new Date(checkIn),
-            checkOut: new Date(checkOut),
-            guests: Number(guests),
-            notes: notes ? String(notes).trim() : undefined,
+            guestName: data.guestName,
+            guestEmail: data.guestEmail,
+            guestPhone: data.guestPhone,
+            roomId: data.roomId,
+            checkIn: data.checkIn,
+            checkOut: data.checkOut,
+            guests: data.guests,
+            notes: data.notes,
             createdBy: userId,
             status: 'pending',
         });
@@ -102,6 +93,11 @@ router.post('/', middleware_1.authenticate, async (req, res) => {
         });
     }
     catch (e) {
+        if (e.name === 'ZodError') {
+            return res.status(400).json({
+                error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+            });
+        }
         console.error('[bookings/create]', e);
         return res.status(500).json({
             error: { code: 'INTERNAL_ERROR', message: 'Failed to create booking' },
@@ -112,19 +108,14 @@ router.post('/', middleware_1.authenticate, async (req, res) => {
 router.put('/:id', middleware_1.authenticate, (0, middleware_1.requireRole)('admin'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, notes } = req.body || {};
         const idStr = id;
         if (!mongoose_1.Types.ObjectId.isValid(idStr)) {
             return res.status(400).json({
                 error: { code: 'BAD_REQUEST', message: 'Invalid booking ID' },
             });
         }
-        if (!status || !['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
-            return res.status(400).json({
-                error: { code: 'BAD_REQUEST', message: 'Valid status is required' },
-            });
-        }
-        const booking = await model_1.default.findByIdAndUpdate(idStr, { status, ...(notes !== undefined ? { notes } : {}) }, { new: true, runValidators: true }).populate('createdBy', 'email').populate('roomId', 'name price');
+        const data = validation_1.updateBookingSchema.parse(req.body);
+        const booking = await model_1.default.findByIdAndUpdate(idStr, { status: data.status, ...(data.notes !== undefined ? { notes: data.notes } : {}) }, { new: true, runValidators: true }).populate('createdBy', 'email').populate('roomId', 'name price');
         if (!booking) {
             return res.status(404).json({
                 error: { code: 'NOT_FOUND', message: 'Booking not found' },
@@ -136,6 +127,11 @@ router.put('/:id', middleware_1.authenticate, (0, middleware_1.requireRole)('adm
         });
     }
     catch (e) {
+        if (e.name === 'ZodError') {
+            return res.status(400).json({
+                error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+            });
+        }
         console.error('[bookings/update]', e);
         return res.status(500).json({
             error: { code: 'INTERNAL_ERROR', message: 'Failed to update booking' },

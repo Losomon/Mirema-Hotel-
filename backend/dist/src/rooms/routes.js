@@ -38,9 +38,9 @@ router.get('/', async (req, res) => {
         });
     }
     catch (e) {
-        if (e instanceof Error && e.message.includes('validation')) {
+        if (e.name === 'ZodError') {
             return res.status(400).json({
-                error: { code: 'BAD_REQUEST', message: e.message },
+                error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
             });
         }
         console.error('[rooms/list]', e);

@@ -4,30 +4,22 @@ import bcrypt from 'bcrypt';
 import User from '../models/User';
 import { signToken } from './jwt';
 import { authenticate, requireRole, AuthedRequest } from './middleware';
+import { loginSchema } from '../validation';
 
 const router = express.Router();
 
 router.post('/login', async (req: Request, res: Response) => {
   try {
-    const { email, password } = (req.body ?? {}) as {
-      email?: string;
-      password?: string;
-    };
+    const { email, password } = loginSchema.parse(req.body);
 
-    if (!email || !password) {
-      return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: 'email and password are required' }
-      });
-    }
-
-    const user = await User.findOne({ email: String(email).toLowerCase().trim() });
+    const user = await User.findOne({ email });
     if (!user) {
       return res
         .status(401)
         .json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } });
     }
 
-    const ok = await bcrypt.compare(String(password), user.passwordHash);
+    const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
       return res
         .status(401)
@@ -39,7 +31,12 @@ router.post('/login', async (req: Request, res: Response) => {
       token,
       user: { id: String(user._id), email: user.email, role: user.role }
     });
-  } catch (e) {
+  } catch (e: any) {
+    if (e.name === 'ZodError') {
+      return res.status(400).json({
+        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
+      });
+    }
     console.error('[auth/login]', e);
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Login failed' }
@@ -66,4 +63,3 @@ router.get('/admin/health', authenticate, requireRole('admin'), (_req: Request, 
 });
 
 export default router;
-

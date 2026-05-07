@@ -37,10 +37,10 @@ router.get('/', async (req: Request, res: Response) => {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch (e) {
-    if (e instanceof Error && e.message.includes('validation')) {
+  } catch (e: any) {
+    if (e.name === 'ZodError') {
       return res.status(400).json({
-        error: { code: 'BAD_REQUEST', message: e.message },
+        error: { code: 'BAD_REQUEST', message: 'Validation failed', details: e.errors },
       });
     }
     console.error('[rooms/list]', e);
