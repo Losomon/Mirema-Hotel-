@@ -12,7 +12,7 @@ import { seedAdminUser } from './src/seedAdmin';
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 
 // Security middleware
@@ -128,4 +128,6 @@ async function start() {
   app.listen(PORT, () => console.log(`Server on port ${PORT}`));
 }
 
-start();
+if (require.main === module) {
+  start();
+}
