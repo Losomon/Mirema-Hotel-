@@ -73,15 +73,3 @@
 - [ ] Add health + readiness endpoints
   - `/health` (already), add `/ready` or `/metrics`.
 
----
-## Suggested grouping into GitHub issues
-1. `backend/admin-auth` (auth + admin roles)
-2. `backend/rooms-crud`
-3. `backend/bookings-crud`
-4. `backend/availability`
-5. `backend/security-hardening`
-6. `backend/tests`
-7. `frontend/integrate-rooms-api`
-8. `frontend/integrate-bookings-api`
-9. `frontend/admin-ui`
-

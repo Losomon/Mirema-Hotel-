@@ -55,11 +55,10 @@ private static async populateMultiRefs<T extends WixDataItem>(
   collectionId: string,
   item: T,
   multiRefs: string[]
-): Promise<T> {
-  if (multiRefs.length === 0) return item;
+): Promise<T & { _refMeta?: Record<string, RefFieldMeta> }> {
+  if (multiRefs.length === 0) return item as T & { _refMeta?: Record<string, RefFieldMeta> };
 
-  const itemWithRefs = { ...item };
-  itemWithRefs._refMeta = {};
+  const itemWithRefs = { ...item, _refMeta: {} as Record<string, RefFieldMeta> };
 
   for (const refField of multiRefs) {
     try {
@@ -70,36 +69,37 @@ private static async populateMultiRefs<T extends WixDataItem>(
       });
 
       (itemWithRefs as any)[refField] = result.items;
-      (itemWithRefs._refMeta as Record<string, RefFieldMeta>)[refField] = {
+      itemWithRefs._refMeta[refField] = {
         totalCount: result.totalCount ?? result.items.length,
         returnedCount: result.items.length,
         hasMore: result.hasNext(),
       };
     } catch {
       (itemWithRefs as any)[refField] = [];
-      (itemWithRefs._refMeta as Record<string, RefFieldMeta>)[refField] = { totalCount: 0, returnedCount: 0, hasMore: false };
+      itemWithRefs._refMeta[refField] = { totalCount: 0, returnedCount: 0, hasMore: false };
     }
   }
-  return itemWithRefs as T;
+  return itemWithRefs as T & { _refMeta?: Record<string, RefFieldMeta> };
 }
 
-  /**
-   * Creates a new item in the collection
-   * @param itemData - Data for the new item (single reference fields should be IDs: string)
-   * @param multiReferences - Multi-reference fields as Record<fieldName, arrayOfIds>
-   * @returns Promise<T> - The created item
-   */
-  static async create<T extends WixDataItem>(
-    collectionId: string,
-    itemData: Partial<T> | Record<string, unknown>,
-    multiReferences?: Record<string, unknown>
-  ): Promise<T> {
-    try {
-      const result = await items.insert(collectionId, itemData as Record<string, unknown>);
+   /**
+    * Creates a new item in the collection
+    * @param itemData - Data for the new item (single reference fields should be IDs: string)
+    * @param multiReferences - Multi-reference fields as Record<fieldName, arrayOfIds>
+    * @returns Promise<T> - The created item
+    */
+   static async create<T extends WixDataItem>(
+     collectionId: string,
+     itemData: Partial<T> | Record<string, unknown>,
+     multiReferences?: Record<string, unknown>
+   ): Promise<T> {
+     try {
+       const insertResponse = await items.insert(collectionId, itemData as Record<string, unknown>);
+       const result = insertResponse.dataItem as T & { _id: string };
 
        if (multiReferences && Object.keys(multiReferences).length > 0 && result._id) {
          for (const [propertyName, refIds] of Object.entries(multiReferences)) {
-           if (Array.isArray(refIds)) {
+           if (Array.isArray(refIds) && refIds.every(id => typeof id === 'string')) {
              for (const refId of refIds) {
                await items.insertReference(collectionId, propertyName, result._id, refId);
              }
@@ -107,13 +107,13 @@ private static async populateMultiRefs<T extends WixDataItem>(
          }
        }
 
-      return result as T;
-    } catch (error) {
-      // Should consider reverting the insert with a remove in order to prevent partial insert.
-      console.error(`Error creating ${collectionId}:`, error);
-      throw new Error(error instanceof Error ? error.message : `Failed to create ${collectionId}`);
-    }
-  }
+       return result as T;
+     } catch (error) {
+       // Should consider reverting the insert with a remove in order to prevent partial insert.
+       console.error(`Error creating ${collectionId}:`, error);
+       throw new Error(error instanceof Error ? error.message : `Failed to create ${collectionId}`);
+     }
+   }
 
   /**
    * Retrieves items from the collection with pagination (default: 50 per page)
@@ -155,37 +155,37 @@ private static async populateMultiRefs<T extends WixDataItem>(
     }
   }
 
-  /**
-   * Retrieves a single item by ID with full reference support
-   * Use this for detail pages where you need multi-reference fields populated
-   * @param includeRefs - { singleRef: [...], multiRef: [...] } or string[] for backward compatibility
-   */
-  static async getById<T extends WixDataItem>(
-    collectionId: string,
-    itemId: string,
-    includeRefs?: { singleRef?: string[]; multiRef?: string[] } | string[]
-  ): Promise<T | null> {
-    try {
-      // Support both old format (string[]) and new format ({ singleRef, multiRef })
-      const isLegacyFormat = Array.isArray(includeRefs);
-      const singleRefs = isLegacyFormat ? includeRefs : (includeRefs?.singleRef || []);
-      const multiRefs = isLegacyFormat ? [] : (includeRefs?.multiRef || []);
+   /**
+    * Retrieves a single item by ID with full reference support
+    * Use this for detail pages where you need multi-reference fields populated
+    * @param includeRefs - { singleRef: [...], multiRef: [...] } or string[] for backward compatibility
+    */
+   static async getById<T extends WixDataItem>(
+     collectionId: string,
+     itemId: string,
+     includeRefs?: { singleRef?: string[]; multiRef?: string[] } | string[]
+   ): Promise<(T & { _refMeta?: Record<string, RefFieldMeta> }) | null> {
+     try {
+       // Support both old format (string[]) and new format ({ singleRef, multiRef })
+       const isLegacyFormat = Array.isArray(includeRefs);
+       const singleRefs = isLegacyFormat ? includeRefs : (includeRefs?.singleRef || []);
+       const multiRefs = isLegacyFormat ? [] : (includeRefs?.multiRef || []);
 
-      let query = items.query(collectionId).eq("_id", itemId);
-      if (singleRefs.length > 0) {
-        query = query.include(...singleRefs);
-      }
+       let query = items.query(collectionId).eq("_id", itemId);
+       if (singleRefs.length > 0) {
+         query = query.include(...singleRefs);
+       }
 
-      const result = await query.find();
-      if (result.items.length === 0) return null;
+       const result = await query.find();
+       if (result.items.length === 0) return null;
 
-      // Populate multi-refs using queryReferenced (only for single item - efficient)
-      return this.populateMultiRefs<T>(collectionId, result.items[0] as T, multiRefs);
-    } catch (error) {
-      console.error(`Error fetching ${collectionId} by ID:`, error);
-      throw new Error(error instanceof Error ? error.message : `Failed to fetch ${collectionId}`);
-    }
-  }
+       // Populate multi-refs using queryReferenced (only for single item - efficient)
+       return this.populateMultiRefs<T>(collectionId, result.items[0] as T, multiRefs);
+     } catch (error) {
+       console.error(`Error fetching ${collectionId} by ID:`, error);
+       throw new Error(error instanceof Error ? error.message : `Failed to fetch ${collectionId}`);
+     }
+   }
 
   /**
    * Updates an existing item
