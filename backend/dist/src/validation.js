@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateBookingSchema = exports.createBookingSchema = exports.paginationSchema = exports.updateRoomSchema = exports.createRoomSchema = void 0;
+exports.updateBookingSchema = exports.createBookingSchema = exports.availabilitySchema = exports.paginationSchema = exports.updateRoomSchema = exports.createRoomSchema = void 0;
 const zod_1 = require("zod");
 const mongoose_1 = require("mongoose");
 // Room validation schemas
@@ -20,9 +20,18 @@ exports.paginationSchema = zod_1.z.object({
     sort: zod_1.z.enum(['price', 'name', 'capacity']).optional(),
     order: zod_1.z.enum(['asc', 'desc']).default('asc'),
 });
-// Booking validation schemas
+// Availability validation
 const today = new Date();
 today.setHours(0, 0, 0, 0);
+exports.availabilitySchema = zod_1.z.object({
+    roomId: zod_1.z.string().refine(v => mongoose_1.Types.ObjectId.isValid(v), { message: 'Invalid room ID' }).optional(),
+    startDate: zod_1.z.coerce.date().min(today, 'Start date cannot be in the past'),
+    endDate: zod_1.z.coerce.date().min(today, 'End date cannot be in the past'),
+}).refine(d => d.endDate > d.startDate, {
+    message: 'End date must be after start date',
+    path: ['endDate'],
+});
+// Booking validation schemas
 exports.createBookingSchema = zod_1.z.object({
     guestName: zod_1.z.string().min(1, 'Guest name is required').trim(),
     guestEmail: zod_1.z.string().email('Invalid email').toLowerCase().trim(),
