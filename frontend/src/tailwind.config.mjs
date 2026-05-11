@@ -40,5 +40,5 @@ export default {
     future: {
         hoverOnlyWhenSupported: true,
     },
-    plugins: [require('@tailwindcss/container-queries'), require('@tailwindcss/typography')],
+    plugins: [require('@tailwindcss/typography')],
 }
