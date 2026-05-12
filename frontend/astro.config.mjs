@@ -29,11 +29,6 @@ export default defineConfig({
   ],
   vite: {
     plugins: [customErrorOverlayPlugin()],
-    resolve: {
-      alias: {
-        "motion-dom": "motion-dom/dist/cjs/index.js",
-      },
-    },
   },
   devToolbar: {
     enabled: false,

@@ -18,7 +18,7 @@
   "description": "",
   "dependencies": {
     "@astrojs/react": "latest",
-    "@astrojs/tailwind": "latest",
+    "@astrojs/tailwind": "^6.0.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
@@ -48,6 +48,7 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-hook/resize-observer": "^2.0.2",
+    "@shikijs/langs": "^4.0.2",
     "@tailwindcss/typography": "^0.5.19",
     "@wix/data": "^1.0.0",
     "@wix/ecom": "^1.0.2052",
